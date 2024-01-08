@@ -1,0 +1,348 @@
+#include <ctype.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define FIRST_SENT "Course work for option 4.1, created by Dmitrii Anisimov.\n"
+#define STRING_SEPARATOR " ,\n\t\r"
+
+int call_fun();
+int count_vowels(char *word);
+int compare_sentences(const void *a, const void *b);
+
+char *input(int *sens_num);
+char **separation(char *text, int sens_num);
+char **removing(char **sentences, int *sens_num);
+
+void sort_sentences(char **sentences, int sens_num);
+void menu(int num_fun);
+void change_text(char **sentences, int sens_num);
+void delete_even_sentences(char **sentences, int *sens_num);
+void print_information();
+void print_sentences_with_uppercase_words(char **sentences, int sens_num);
+
+int main() {
+  printf(FIRST_SENT);
+  int num_fun = call_fun();
+  menu(num_fun);
+  return 0;
+}
+
+int call_fun() {
+  int num_fun;
+  scanf("%d", &num_fun);
+  return num_fun;
+}
+
+void menu(int num_fun) {
+  if (num_fun < 0 || num_fun > 5) {
+    printf("error: нужно ввести число от 0 до 5\n");
+    return;
+  }
+  if (num_fun == 5) {
+    print_information();
+    return;
+  }
+  int sens_num;
+  char *text = input(&sens_num);
+  char **sentences = separation(text, sens_num);
+  sentences = removing(sentences, &sens_num);
+  switch (num_fun) {
+  case 0:
+    for (int i = 0; i < sens_num; i++) {
+      printf("%s.\n", sentences[i]);
+    }
+    break;
+  case 1:
+    change_text(sentences, sens_num);
+    for (int i = 0; i < sens_num; i++) {
+      printf("%s.\n", sentences[i]);
+    }
+    break;
+  case 2:
+    delete_even_sentences(sentences, &sens_num);
+    for (int i = 0; i < sens_num; i++) {
+      printf("%s.\n", sentences[i]);
+    }
+    break;
+  case 3:
+    sort_sentences(sentences, sens_num);
+    for (int i = 0; i < sens_num; i++) {
+      printf("%s.\n", sentences[i]);
+    }
+    break;
+  case 4:
+    print_sentences_with_uppercase_words(sentences, sens_num);
+    break;
+  default:
+    break;
+  }
+}
+
+char *input(int *sens_num) {
+  *sens_num = 0;
+  int t_size = 0;
+  int size_str = 1;
+  char *text = NULL;
+  int newline_count = 0;
+  char c = getchar();
+  while (newline_count < 2) {
+    c = getchar();
+    if (c == '\n') {
+      newline_count++;
+    } else {
+      newline_count = 0;
+    }
+    if (t_size + 1 >= size_str) {
+      size_str = size_str * 2;
+      text = (char *)realloc(text, size_str * sizeof(char));
+    }
+    if (c == '.') {
+      (*sens_num)++;
+      if (t_size > 0 && text[t_size - 1] == ' ') {
+        text[t_size - 1] = '\0';
+        t_size--;
+        (*sens_num)--;
+      }
+    }
+    text[t_size] = c;
+    t_size++;
+  }
+  text[t_size - 2] = '\0';
+  return text;
+}
+
+char **separation(char *text, int sens_num) {
+  char **sentences = (char **)calloc(sens_num, sizeof(char *));
+
+  int i = 0;
+  char *current_sentence = strtok(text, ".");
+  while (current_sentence != NULL) {
+    while (strchr(STRING_SEPARATOR, *current_sentence)) {
+      current_sentence++;
+    }
+    sentences[i++] = current_sentence;
+    current_sentence = strtok(NULL, ".");
+  }
+
+  return sentences;
+}
+
+char **removing(char **sentences, int *sens_num) {
+  int sentence_count_to_remove = 0;
+  for (int i = 0; i < *sens_num; i++) {
+    if (sentences[i] == NULL) {
+      continue;
+    }
+    for (int j = i + 1; j < *sens_num; j++) {
+      if (sentences[j] != NULL && strcasecmp(sentences[i], sentences[j]) == 0) {
+        sentences[j] = NULL;
+        sentence_count_to_remove++;
+      }
+    }
+  }
+  char **new_sentences = (char **)calloc(*sens_num - sentence_count_to_remove, sizeof(char *));
+  int next_sentence_index = 0;
+  for (int i = 0; i < *sens_num; i++) {
+    if (sentences[i] != NULL) {
+      new_sentences[next_sentence_index++] = sentences[i];
+    }
+  }
+  *sens_num -= sentence_count_to_remove;
+  return new_sentences;
+}
+
+void print_information() {
+  printf("0 – вывод текста после первичной обязательной обработки. \n1 – "
+         "преобразовывает предложения так, чтобы каждое первое слово в нем "
+         "начиналось с заглавной буквы, а остальные символы были прописными. "
+         "\n2 – удаляет все предложения, состоящие из четного количества слов. "
+         "\n3 – отсортировывает предложения по сумме количеств гласных букв в "
+         "каждом втором слове. \n4 – выводит на экран все предложения, в "
+         "которых в середине встречаются слова, состоящие из прописных букв. "
+         "данные слова будут выделены синим цветом.\n5 – справка об функциях, "
+         "которые реализует программа.");
+}
+void change_text(char **sentences, int sens_num) {
+  for (int i = 0; i < sens_num; i++) {
+    char *sentence = sentences[i];
+    if (islower(sentence[0])) {
+      sentence[0] = toupper(sentence[0]);
+    }
+    int j = 1;
+    while (sentence[j] != '\0') {
+      if (isupper(sentence[j])) {
+        sentence[j] = tolower(sentence[j]);
+      }
+      j++;
+    }
+  }
+}
+void delete_even_sentences(char **sentences, int *sens_num) {
+  for (int i = 0; i < *sens_num; i++) {
+    char *sentence = sentences[i];
+    int word_count = 1;
+    for (int j = 0; j < strlen(sentence); j++) {
+      if (sentence[j] == ' ') {
+        word_count++;
+      }
+    }
+    if (word_count % 2 == 0) {
+      for (int k = i; k < *sens_num - 1; k++) {
+        sentences[k] = sentences[k + 1];
+      }
+      (*sens_num)--;
+      i--;
+    }
+  }
+}
+void sort_sentences(char **sentences, int sens_num) {
+  int *vowel_sums = (int *)calloc(sens_num, sizeof(int));
+  int *sentence_order = (int *)calloc(sens_num, sizeof(int));
+  for (int i = 0; i < sens_num; i++) {
+    sentence_order[i] = i;
+
+    char *sentence = (char *)calloc(strlen(sentences[i]), sizeof(char));
+    strcpy(sentence, sentences[i]);
+    char *word = strtok(sentence, STRING_SEPARATOR);
+
+    int word_count = 0;
+
+    while (word != NULL) {
+      if (word_count % 2 == 1) {
+        vowel_sums[i] += count_vowels(word);
+      }
+      word = strtok(NULL, STRING_SEPARATOR);
+      word_count++;
+    }
+    free(sentence);
+  }
+  for (int i = 0; i < sens_num - 1; i++) {
+    for (int j = 0; j < sens_num - i - 1; j++) {
+      if (vowel_sums[j] > vowel_sums[j + 1]) {
+        int temp_sum = vowel_sums[j];
+        vowel_sums[j] = vowel_sums[j + 1];
+        vowel_sums[j + 1] = temp_sum;
+        int temp_order = sentence_order[j];
+        sentence_order[j] = sentence_order[j + 1];
+        sentence_order[j + 1] = temp_order;
+      }
+    }
+  }
+  char **sorted_sentences = (char **)calloc(sens_num, sizeof(char *));
+  for (int i = 0; i < sens_num; i++) {
+    sorted_sentences[i] = sentences[sentence_order[i]];
+  }
+  for (int i = 0; i < sens_num; i++) {
+    sentences[i] = sorted_sentences[i];
+  }
+  free(vowel_sums);
+  free(sentence_order);
+  free(sorted_sentences);
+}
+int count_vowels(char *word) {
+  int count = 0;
+  int len = strlen(word);
+  for (int i = 0; i < len; i++) {
+    if (tolower(word[i]) == 'a' || tolower(word[i]) == 'e' ||
+        tolower(word[i]) == 'i' || tolower(word[i]) == 'o' ||
+        tolower(word[i]) == 'u' || tolower(word[i]) == 'y') {
+      count++;
+    }
+  }
+  return count;
+}
+int compare_sentences(const void *a, const void *b) {
+  char *sentence_a = *(char **)a;
+  char *sentence_b = *(char **)b;
+
+  char *word_a = strtok(sentence_a, " ");
+  char *word_b = strtok(sentence_b, " ");
+
+  int count_a = 0;
+  int count_b = 0;
+
+  while (word_a != NULL || word_b != NULL) {
+    if (word_a != NULL) {
+      word_a = strtok(NULL, " ");
+      if (word_a != NULL) {
+        count_a += count_vowels(word_a);
+      }
+    }
+
+    if (word_b != NULL) {
+      word_b = strtok(NULL, " ");
+      if (word_b != NULL) {
+        count_b += count_vowels(word_b);
+      }
+    }
+  }
+
+  return count_b - count_a;
+}
+void print_sentences_with_uppercase_words(char **sentences, int sens_num) {
+  for (int i = 0; i < sens_num; i++) {
+    int arrays_size = 1;
+    int uppercase_word_index = -1;
+
+    bool *lower_case = (bool *)calloc(arrays_size, sizeof(bool));
+    int *start_indexes = (int *)calloc(arrays_size, sizeof(int));
+    int *end_indexes = (int *)calloc(arrays_size, sizeof(int));
+    int word_count = 0;
+    int j = 0;
+    while (j < strlen(sentences[i])) {
+      while (j < strlen(sentences[i]) &&
+             strchr(STRING_SEPARATOR, sentences[i][j]) != NULL) {
+        j++;
+      }
+      if (j == strlen(sentences[i])) {
+        break;
+      }
+
+      ++word_count;
+      if (word_count >= arrays_size) {
+        arrays_size *= 2;
+        lower_case = (bool *)realloc(lower_case, arrays_size);
+        start_indexes = (int *)realloc(start_indexes, arrays_size * sizeof(int));
+        end_indexes = (int *)realloc(end_indexes, arrays_size * sizeof(int));
+      }
+
+      start_indexes[word_count - 1] = j;
+      lower_case[word_count - 1] = true;
+      while (j < strlen(sentences[i]) &&
+             strchr(STRING_SEPARATOR, sentences[i][j]) == NULL) {
+        if (sentences[i][j] < 'a' || sentences[i][j] > 'z') {
+          lower_case[word_count - 1] = false;
+        }
+        j++;
+      }
+      if (uppercase_word_index == -1 && word_count > 1 &&
+          lower_case[word_count - 1]) {
+        uppercase_word_index = word_count - 1;
+      }
+      end_indexes[word_count - 1] = j - 1;
+    }
+
+    if (uppercase_word_index != -1 && uppercase_word_index < word_count - 1) {
+      int current_word_index = 0;
+      for (int j = 0; j <= strlen(sentences[i]); j++) {
+        if (current_word_index > 0 && current_word_index < word_count - 1 &&
+            j == start_indexes[current_word_index] &&
+            lower_case[current_word_index]) {
+          printf("\x1B[34m");
+        }
+        printf("%c", sentences[i][j]);
+        if (j == end_indexes[current_word_index]) {
+          printf("\033[0m");
+          ++current_word_index;
+        }
+      }
+      printf(".\n");
+    }
+    
+    free(lower_case);
+    free(start_indexes);
+    free(end_indexes);
+  }
+}
